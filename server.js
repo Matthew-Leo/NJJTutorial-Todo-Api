@@ -12,7 +12,7 @@ var todos = [{
         completed: false
     }, {
         id: 3,
-        description: "Master the secrets of time and space",
+        description: "Master the arcane secrets of time and space",
         completed: true
     }];
 
