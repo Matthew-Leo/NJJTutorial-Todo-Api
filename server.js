@@ -30,12 +30,20 @@ app.get('/todos/:id', function (req, res) {
 // POST /todos
 app.post("/todos",function (req, res) {
     var body = req.body;
-    body["id"] = todoNextId++;
-    todos.push(body);
-    console.log(body.description);
-    res.send(body);
+    if (!_.isBoolean(body.completed)
+    || !_.isString(body.description)
+    || body.description.trim().length === 0) {
+        res.status(400).send();
+        return;
+    }
+    var cleanPostedObj = _.pick(body,"description","completed");
+    cleanPostedObj.description = cleanPostedObj.description.trim();
+    cleanPostedObj["id"] = todoNextId++;
+    todos.push(cleanPostedObj);
+    console.log(cleanPostedObj.description);
+    res.send(cleanPostedObj);
     
-});
+}); 
 
 
 app.listen(PORT, function () {
