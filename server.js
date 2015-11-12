@@ -1,7 +1,8 @@
-
+var _ = require("underscore");
 var express = require('express');
 var app = express();
 var PORT = process.env.PORT || 3000;
+
 
 var todos = []; // start with empty todos list
 var todoNextId = 1;
@@ -19,11 +20,7 @@ app.get('/todos', function (req, res) {
 
 app.get('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id);
-    var found = undefined;
-    todos.forEach(function (todo) {
-        if (todo.id === todoId) 
-            found = todo;
-    });
+    var found = _.findWhere(todos,{id:todoId});
     if (found)
         res.json(found);
     else
