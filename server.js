@@ -14,10 +14,10 @@ app.get('/', function (req, res) {
     res.send('TODO API ROOT');
 });
 
+// get /todos?completed=true&q=descriptionContains
 app.get('/todos', function (req, res) {
     var queryParams = req.query;
     var filteredTodos = todos;
-    console.log(JSON.stringify(queryParams));
     if (queryParams.hasOwnProperty('completed')) {
         var completed;
         if (queryParams.completed === "true") 
@@ -28,10 +28,15 @@ app.get('/todos', function (req, res) {
             res.status(400).json({error : "invalid value for completed:" + queryParams.completed});
             return;
         }
-        console.log("Getting values with completed " + completed);
-        console.log(JSON.stringify(filteredTodos));
         filteredTodos = _.where(filteredTodos,{completed : completed});
-        console.log(JSON.stringify(filteredTodos));
+    }
+    if (queryParams.hasOwnProperty('q') && 
+            queryParams.q.trim().length > 0) {
+        var lookingFor = queryParams.q.trim().toLowerCase();
+        filteredTodos = _.filter(filteredTodos, function (item) {
+            return (item.hasOwnProperty('description') &&
+                    item.description.toLowerCase().indexOf(lookingFor) >= 0)
+        })
     }
     res.json(filteredTodos);
 });
@@ -81,7 +86,6 @@ function patchFunc(req, res) {
     var todoId = parseInt(req.params.id);
     var found = _.findWhere(todos, {id: todoId});
     if (!found) {
-        console.log("Did not find id " + todoId);
         res.status(404).send();
         return;
     }
@@ -98,14 +102,12 @@ function patchFunc(req, res) {
     if (body.hasOwnProperty('description')
             && _.isString(body.description)
             && body.description.trim().length > 0) {
-        console.log("setting description")
         validAttributes.description = body.description;
     } else if (body.hasOwnProperty('description')) {
         console.log("bad description")
         res.status(400).json({error: "invalid value type for completed:'" + body.description + "'"});
         return;
     }
-    console.log(JSON.stringify(validAttributes));
     _.extend(found, validAttributes);
     res.status(200).json(found);
 
@@ -114,15 +116,9 @@ function patchFunc(req, res) {
 
 
 // PATCH /todos:id
-app.patch('/todos/:id', function (req, res) {
-    console.log("Calling patch");
-    patchFunc(req, res);
-});
+app.patch('/todos/:id', patchFunc);
 // PUT /todos:id
-app.put('/todos/:id', function (req, res) {
-    console.log("Calling put");
-    patchFunc(req, res);
-});
+app.put('/todos/:id', patchFunc);
 
 
 try {
@@ -132,6 +128,4 @@ try {
     });
 } catch (e) {
     console.log("CAUGHT:" + e.toString());
-} finally {
-    console.log("Done with listening");
 }
