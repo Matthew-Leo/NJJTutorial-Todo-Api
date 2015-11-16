@@ -15,7 +15,25 @@ app.get('/', function (req, res) {
 });
 
 app.get('/todos', function (req, res) {
-    res.json(todos);
+    var queryParams = req.query;
+    var filteredTodos = todos;
+    console.log(JSON.stringify(queryParams));
+    if (queryParams.hasOwnProperty('completed')) {
+        var completed;
+        if (queryParams.completed === "true") 
+            completed = true;
+        else if (queryParams.completed === "false")
+            completed = false;
+        else {
+            res.status(400).json({error : "invalid value for completed:" + queryParams.completed});
+            return;
+        }
+        console.log("Getting values with completed " + completed);
+        console.log(JSON.stringify(filteredTodos));
+        filteredTodos = _.where(filteredTodos,{completed : completed});
+        console.log(JSON.stringify(filteredTodos));
+    }
+    res.json(filteredTodos);
 });
 
 
@@ -40,45 +58,6 @@ app.delete('/todos/:id', function (req, res) {
         res.status(404).json({error: "No todo found with id:" + req.params.id});
 });
 
-// PUT /todos:id
-app.put('/todos/:id', function (req, res) {
-    var todoId = parseInt(req.params.id);
-    var found = _.findWhere(todos, {id: todoId});
-    if (!found) {
-        console.log("Did not find id " + todoId);
-        res.status(404).send(); 
-        return;
-    }
-    var body = req.body;
-    var validAttributes = {};
-    console.log("BODY:" + JSON.stringify(req.body));
-    if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-        console.log("Setting completed:" + body.completed);
-        validAttributes.completed = body.completed;
-    } else if (body.hasOwnProperty('completed')) {
-        // bad property
-        console.log("something screwy with completed property");
-        res.status(400).send();
-        return;
-    } 
-    if (body.hasOwnProperty('description') 
-            && _.isString(body.description) 
-            && body.description.trim().length > 0) {
-        console.log("Setting description:" + body.description);
-        
-        validAttributes.description = body.description;
-    } else if (body.hasOwnProperty('description')) {
-        // bad property
-        console.log("something screwy with description property");
-        res.status(400).send();
-        return;
-    } 
-   console.log(JSON.stringify(validAttributes));
-   _.extend(found, validAttributes);
-   console.log(JSON.stringify(found));
-   res.status(200).json(found) 
-    
-});
 
 // POST /todos
 app.post("/todos", function (req, res) {
@@ -95,7 +74,54 @@ app.post("/todos", function (req, res) {
     todos.push(cleanPostedObj);
     console.log(cleanPostedObj.description);
     res.send(cleanPostedObj);
+});
 
+// note -- "PUT" in the course API should be "PATCH".
+function patchFunc(req, res) {
+    var todoId = parseInt(req.params.id);
+    var found = _.findWhere(todos, {id: todoId});
+    if (!found) {
+        console.log("Did not find id " + todoId);
+        res.status(404).send();
+        return;
+    }
+
+    var body = req.body;
+    var validAttributes = {};
+    if (body.hasOwnProperty('completed')
+            && _.isBoolean(body.completed)) {
+        validAttributes.completed = body.completed
+    } else if (body.hasOwnProperty('completed')) {
+        res.status(400).json({error: "invalid value type for completed:" + typeof body.completed});
+        return;
+    }
+    if (body.hasOwnProperty('description')
+            && _.isString(body.description)
+            && body.description.trim().length > 0) {
+        console.log("setting description")
+        validAttributes.description = body.description;
+    } else if (body.hasOwnProperty('description')) {
+        console.log("bad description")
+        res.status(400).json({error: "invalid value type for completed:'" + body.description + "'"});
+        return;
+    }
+    console.log(JSON.stringify(validAttributes));
+    _.extend(found, validAttributes);
+    res.status(200).json(found);
+
+}
+;
+
+
+// PATCH /todos:id
+app.patch('/todos/:id', function (req, res) {
+    console.log("Calling patch");
+    patchFunc(req, res);
+});
+// PUT /todos:id
+app.put('/todos/:id', function (req, res) {
+    console.log("Calling put");
+    patchFunc(req, res);
 });
 
 
