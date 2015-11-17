@@ -49,10 +49,13 @@ app.get('/todos/:id', function (req, res) {
     console.log("looking for " + todoId);
     db.todo.find({where: {id: todoId}}).then(function (found) {
         console.log(JSON.stringify(found));
-        res.json(found)
+        if (!!found) 
+            res.json(found)
+        else
+            res.status(404).send();
     }).catch(function (err) {
         console.log(err);
-        res.status(400).json(err);
+        res.status(500).json(err);
     })
 });
 
