@@ -36,9 +36,12 @@ app.get('/todos', function (req, res) {
         filter.where.description = {$like: "%" + lookingFor + "%"};
     }
     db.todo.findAll(filter).then(function (found) {
-        res.json(found);
+        if(!!found)
+            res.json(found);
+        else
+            res.status(404).send();
     }).catch(function (e) {
-        res.status(400).json(e);
+        res.status(500).json(e);
     })
 });
 
