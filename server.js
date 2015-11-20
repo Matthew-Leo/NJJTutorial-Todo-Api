@@ -16,27 +16,27 @@ app.get('/', function (req, res) {
 // get /todos?completed=true&q=descriptionContains
 app.get('/todos', function (req, res) {
     console.log("GET /todos");
-    var queryParams = req.query;
+    var query = req.query;
     var filter = {where: {}};
-    if (queryParams.hasOwnProperty('completed')) {
+    if (query.hasOwnProperty('completed')) {
         var completed;
-        if (queryParams.completed === "true")
+        if (query.completed === "true")
             completed = true;
-        else if (queryParams.completed === "false")
+        else if (query.completed === "false")
             completed = false;
         else {
-            res.status(400).json({error: "invalid value for completed:" + queryParams.completed});
+            res.status(400).json({error: "invalid value for completed:" + query.completed});
             return;
         }
         filter.where.completed = completed;
     }
-    if (queryParams.hasOwnProperty('q') &&
-            queryParams.q.trim().length > 0) {
-        var lookingFor = queryParams.q.trim().toLowerCase();
+    if (query.hasOwnProperty('q') &&
+            query.q.trim().length > 0) {
+        var lookingFor = query.q.trim().toLowerCase();
         filter.where.description = {$like: "%" + lookingFor + "%"};
     }
     db.todo.findAll(filter).then(function (found) {
-        if(!!found)
+        if (!!found)
             res.json(found);
         else
             res.status(404).send();
@@ -52,7 +52,7 @@ app.get('/todos/:id', function (req, res) {
     console.log("looking for " + todoId);
     db.todo.find({where: {id: todoId}}).then(function (found) {
         console.log(JSON.stringify(found));
-        if (!!found) 
+        if (!!found)
             res.json(found)
         else
             res.status(404).send();
@@ -72,7 +72,7 @@ app.delete('/todos/:id', function (req, res) {
             then(function (found) {
                 res.status(200).json(found);
             }).
-            catch(function (err) {
+            catch (function (err) {
                 res.status(404).json(err);
             });
 });
@@ -120,16 +120,20 @@ function patchFunc(req, res) {
         validAttributes.description = body.description;
     } else if (body.hasOwnProperty('description')) {
         console.log("bad description")
-        res.status(400).json({error: "invalid value type for description:'" + body.description + "'"});
+        res.status(400).json({error: "invalid value type for description:'" + typeof body.description + "'"});
         return;
     }
     // OK now try the update
     db.todo.findById(todoId).
             then(function (found) {
-                _.extend(found, validAttributes); //could also use update
-                found.save().then(function () {
-                    res.status(200).json(found); //wait for db success
-                });
+                if (found) {
+                    _.extend(found, validAttributes); //could also use update
+                    found.save().then(function () {
+                        res.status(200).json(found); //wait for db success
+                    });
+                } else {
+                    res.status(404).send();
+                }
             }).catch(function (err) {
         console.log(err);
         res.status(400).json(err);
