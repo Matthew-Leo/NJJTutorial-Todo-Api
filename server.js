@@ -157,7 +157,7 @@ app.get('/users', function (req, res) {
     let filter = {};
     if (req.query.hasOwnProperty("email")) {
 		console.log("Adding email filter for " + req.query.email.trim());
-		filter.where = {email : req.query.email.trim().toUpperCase()};
+		filter.where = {email : req.query.email.trim().toLowerCase()};
 	}
 	console.log(JSON.stringify(filter));
 		
@@ -174,7 +174,7 @@ app.get('/users', function (req, res) {
 app.get('/users/:id', function (req, res) {
 	db.user.findById(req.params.id).then(
 	    function (found) {
-			if (found) {
+			if (!!found) {
 				res.status(200).json(found);
 			} else {
 				res.status(404).send();
@@ -191,7 +191,7 @@ app.post('/users', function(req, res) {
     let body = req.body;
     let values = _.pick(body, "email", "password");
     if (values.hasOwnProperty("email")) {
-		values.email = values.email.toUpperCase();
+		values.email = values.email;
 	}
     db.user.create(values).then(
       function (newObj) {
