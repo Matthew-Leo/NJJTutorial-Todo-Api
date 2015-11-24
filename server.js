@@ -1,3 +1,5 @@
+"use strict";
+
 var _ = require("underscore");
 var express = require('express');
 var app = express();
@@ -10,7 +12,7 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
 app.get('/', function (req, res) {
-    res.send('TODO API ROOT');
+    res.send('TO\0DO API ROOT');
 });
 
 // get /todos?completed=true&q=descriptionContains
@@ -63,6 +65,7 @@ app.get('/todos/:id', function (req, res) {
 });
 
 // DELETE /todos:id
+
 app.delete('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id);
     db.todo.find({where: {id: todoId}}).
@@ -138,8 +141,67 @@ function patchFunc(req, res) {
         console.log(err);
         res.status(400).json(err);
     });
-}
-;
+};
+
+/*
+ * USERS API
+ */
+ /**
+  * get /users 
+  *   body properties:
+  *       email 
+  */
+
+app.get('/users', function (req, res) {
+    console.log("GET /users");
+    let filter = {};
+    if (req.query.hasOwnProperty("email")) {
+		console.log("Adding email filter for " + req.query.email.trim());
+		filter.where = {email : req.query.email.trim().toUpperCase()};
+	}
+	console.log(JSON.stringify(filter));
+		
+    db.user.findAll(filter).then(function (found) {
+        if (!!found)
+            res.json(found);
+        else
+            res.status(404).send();
+    }).catch(function (e) {
+        res.status(500).json(e);
+    })
+});
+
+app.get('/users/:id', function (req, res) {
+	db.user.findById(req.params.id).then(
+	    function (found) {
+			if (found) {
+				res.status(200).json(found);
+			} else {
+				res.status(404).send();
+			}
+		},
+		function (err) {
+			console.log(JSON.stringify(err));
+			res.status(400).json(err);
+		})
+});
+
+// POST /users
+app.post('/users', function(req, res) {
+    let body = req.body;
+    let values = _.pick(body, "email", "password");
+    if (values.hasOwnProperty("email")) {
+		values.email = values.email.toUpperCase();
+	}
+    db.user.create(values).then(
+      function (newObj) {
+        res.status(200).json(newObj);
+      },
+      function(err) {
+        res.status(400).json(err);
+      }
+    )
+});
 
 
 // PATCH /todos:id
@@ -155,9 +217,9 @@ db.sequelize.sync().then(function () {
         console.log("about to listen on port " + PORT);
         app.listen(PORT, function () {
             console.log("express listening on port " + PORT);
+            console.log("NODE_ENV = " + process.env.NODE_ENV);
         });
     } catch (e) {
         console.log("CAUGHT:" + e.toString());
     }
 });
-
