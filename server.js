@@ -195,7 +195,7 @@ app.post('/users', function(req, res) {
 	}
     db.user.create(values).then(
       function (newObj) {
-        res.status(200).json(newObj);
+        res.status(200).send(newObj.toPublicJSON());
       },
       function(err) {
         res.status(400).json(err);
