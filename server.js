@@ -1,5 +1,6 @@
 "use strict";
 
+
 var _ = require("underscore");
 var express = require('express');
 var app = express();
@@ -143,6 +144,12 @@ function patchFunc(req, res) {
     });
 };
 
+
+// PATCH /todos:id
+app.patch('/todos/:id', patchFunc);
+// PUT /todos:id
+app.put('/todos/:id', patchFunc);
+
 /*
  * USERS API
  */
@@ -188,26 +195,31 @@ app.get('/users/:id', function (req, res) {
 
 // POST /users
 app.post('/users', function(req, res) {
-    let body = req.body;
-    let values = _.pick(body, "email", "password");
-    if (values.hasOwnProperty("email")) {
-		values.email = values.email;
-	}
-    db.user.create(values).then(
-      function (newObj) {
-        res.status(200).send(newObj.toPublicJSON());
-      },
-      function(err) {
-        res.status(400).json(err);
-      }
-    )
+	let body = _.pick(body, "email", "password")
+	db.users.authenticate(body).then(
+	function (user) {
+		res.send(user.toPublicJSON());
+	},
+	function (err) {
+		res.status(401).send;
+	});
 });
 
+// TODO: post /users/login
+app.post('/users/login', function(req, res) {
 
-// PATCH /todos:id
-app.patch('/todos/:id', patchFunc);
-// PUT /todos:id
-app.put('/todos/:id', patchFunc);
+    let body = _.pick(req.body, "email", "password");
+    db.user.authenticate(body).then(
+            function(user) {
+                console.log("Successful authentiation");
+                console.log("app post route sending user:" + user.toPublicJSON());
+                res.send(user.toPublicJSON());
+            },
+            function(err) {
+                console.log("Authentication error:" + (err) ? err : "not specified");
+                res.status(401).send();
+            })
+});
 
 /*
  * set up database
