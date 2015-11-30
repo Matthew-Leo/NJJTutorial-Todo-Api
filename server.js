@@ -161,7 +161,7 @@ app.put('/todos/:id', patchFunc);
 
 app.get('/users', function (req, res) {
     console.log("GET /users");
-    let filter = {};
+    var filter = {};
     if (req.query.hasOwnProperty("email")) {
 		console.log("Adding email filter for " + req.query.email.trim());
 		filter.where = {email : req.query.email.trim().toLowerCase()};
@@ -195,7 +195,7 @@ app.get('/users/:id', function (req, res) {
 
 // POST /users
 app.post('/users', function(req, res) {
-	let body = _.pick(body, "email", "password")
+	var body = _.pick(body, "email", "password")
 	db.users.authenticate(body).then(
 	function (user) {
 		res.send(user.toPublicJSON());
@@ -207,8 +207,7 @@ app.post('/users', function(req, res) {
 
 // TODO: post /users/login
 app.post('/users/login', function(req, res) {
-
-    let body = _.pick(req.body, "email", "password");
+    var body = _.pick(req.body, "email", "password");
     db.user.authenticate(body).then(
             function(user) {
                 console.log("Successful authentiation");
