@@ -194,15 +194,21 @@ app.get('/users/:id', function (req, res) {
 });
 
 // POST /users
+
 app.post('/users', function(req, res) {
-	var body = _.pick(body, "email", "password");
-	db.user.authenticate(body).then(
-	function (user) {
-		res.send(user.toPublicJSON());
-	},
-	function (err) {
-		res.status(401).send;
-	});
+     var body = req.body;
+    var values = _.pick(body, "email", "password");
+    if (values.hasOwnProperty("email")) {
+		values.email = values.email.toLowerCase();
+	}
+    db.user.create(values).then(
+      function (newObj) {
+        res.status(200).send(newObj.toPublicJSON());
+      },
+      function(err) {
+        res.status(400).json(err);
+      }
+    );
 });
 
 // TODO: post /users/login
