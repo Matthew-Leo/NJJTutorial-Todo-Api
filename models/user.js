@@ -3,7 +3,7 @@ var bcrypt = require('bcrypt');
 var _ = require('underscore');
 var SALT_LEN = 10;
 module.exports = function (sequelize, DataTypes) {
-    var userModel = sequelize.define('user',
+    var user = sequelize.define('user',
             {
                 email: {
                     type: DataTypes.STRING,
@@ -47,7 +47,7 @@ module.exports = function (sequelize, DataTypes) {
                     if (typeof body.email !== "string" || typeof body.password !== "string") {
                         return reject();
                     }
-                    userModel.findOne({
+                    user.findOne({
                         where: {
                             email: body.email.toLowerCase()
                         }}).then(function (foundUser) {
