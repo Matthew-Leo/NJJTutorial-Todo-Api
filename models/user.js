@@ -70,5 +70,5 @@ module.exports = function (sequelize, DataTypes) {
                     }
                 }
     });
-    return userModel;
+    return user;
 };
