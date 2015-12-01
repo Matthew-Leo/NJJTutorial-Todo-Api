@@ -216,12 +216,17 @@ app.post('/users/login', function(req, res) {
     var body = _.pick(req.body, "email", "password");
     db.user.authenticate(body).then(
             function(user) {
-                console.log("Successful authentiation");
-                console.log("app post route sending user:" + user.toPublicJSON());
-                res.send(user.toPublicJSON());
+                console.log("Successful authentiation " + body.email);
+                var token = user.generateToken('authentication');
+                if (token)
+                    res.header('Auth', user.generateToken('authentication')).json(user.toPublicJSON());
+                else {
+                    console.log("Error generating jwt token");
+                    res.status(401).send();
+                }
             },
             function(err) {
-                console.log("Authentication error:" + (err) ? err : "not specified");
+                console.log("Authentication error:" + (err) ? err.toString() : "not specified");
                 res.status(401).send();
             })
 });
