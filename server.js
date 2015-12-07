@@ -1,23 +1,19 @@
 "use strict";
-
-
+var ERASE_DB = false;
 var _ = require("underscore");
 var express = require('express');
 var app = express();
 var PORT = process.env.PORT || 3000;
 var db = require('./db.js');
-
-
-
+var middleware = require('./middleware.js')(db);
+var requireAuthentication = middleware.requireAuthentication;
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
-
 app.get('/', function (req, res) {
     res.send('TO\0DO API ROOT');
 });
-
 // get /todos?completed=true&q=descriptionContains
-app.get('/todos', function (req, res) {
+app.get('/todos', requireAuthentication, function (req, res) {
     console.log("GET /todos");
     var query = req.query;
     var filter = {where: {}};
@@ -47,10 +43,8 @@ app.get('/todos', function (req, res) {
         res.status(500).json(e);
     })
 });
-
-
 // GET /todos:id
-app.get('/todos/:id', function (req, res) {
+app.get('/todos/:id', requireAuthentication, function (req, res) {
     var todoId = parseInt(req.params.id);
     console.log("looking for " + todoId);
     db.todo.find({where: {id: todoId}}).then(function (found) {
@@ -64,10 +58,9 @@ app.get('/todos/:id', function (req, res) {
         res.status(500).json(err);
     })
 });
-
 // DELETE /todos:id
 
-app.delete('/todos/:id', function (req, res) {
+app.delete('/todos/:id', requireAuthentication, function (req, res) {
     var todoId = parseInt(req.params.id);
     db.todo.find({where: {id: todoId}}).
             then(function (found) {
@@ -80,10 +73,8 @@ app.delete('/todos/:id', function (req, res) {
                 res.status(404).json(err);
             });
 });
-
-
 // POST /todos
-app.post("/todos", function (req, res) {
+app.post("/todos", requireAuthentication, function (req, res) {
     var body = req.body;
     if (!_.isBoolean(body.completed)
             || !_.isString(body.description)
@@ -93,22 +84,26 @@ app.post("/todos", function (req, res) {
     }
     var cleanPostedObj = _.pick(body, "description", "completed");
     cleanPostedObj.description = cleanPostedObj.description.trim();
-    db.todo.create(cleanPostedObj).then(
-            function (newObj) {
-                console.log(JSON.stringify(newObj));
-                res.status(200).json(newObj);
-            }).catch(
+    db.todo.create(cleanPostedObj).then(function (newObj) {
+        req.user.addTodo(newObj).then(function () {
+            console.log("added:" + JSON.stringify(newObj));
+            return newObj.reload();
+        }).then(function (todo) {
+            console.log("returning " + JSON.stringify(todo));
+            res.json(todo.toJSON());
+        })
+    }).catch(
             function (err) {
                 console.log("Error:");
                 console.log(err);
                 res.status(400).json(err);
             });
-});
+})
+
 
 // note -- "PUT" in the course API should be "PATCH".
 function patchFunc(req, res) {
     var todoId = parseInt(req.params.id);
-
     var body = req.body;
     var validAttributes = {};
     if (body.hasOwnProperty('completed')
@@ -142,32 +137,29 @@ function patchFunc(req, res) {
         console.log(err);
         res.status(400).json(err);
     });
-};
-
-
+}
+;
 // PATCH /todos:id
-app.patch('/todos/:id', patchFunc);
+app.patch('/todos/:id', requireAuthentication, patchFunc);
 // PUT /todos:id
-app.put('/todos/:id', patchFunc);
-
+app.put('/todos/:id', requireAuthentication, patchFunc);
 /*
  * USERS API
  */
- /**
-  * get /users 
-  *   body properties:
-  *       email 
-  */
+/**
+ * get /users 
+ *   body properties:
+ *       email 
+ */
 
-app.get('/users', function (req, res) {
+app.get('/users', requireAuthentication, function (req, res) {
     console.log("GET /users");
     var filter = {};
     if (req.query.hasOwnProperty("email")) {
-		console.log("Adding email filter for " + req.query.email.trim());
-		filter.where = {email : req.query.email.trim().toLowerCase()};
-	}
-	console.log(JSON.stringify(filter));
-		
+        console.log("Adding email filter for " + req.query.email.trim());
+        filter.where = {email: req.query.email.trim().toLowerCase()};
+    }
+    console.log(JSON.stringify(filter));
     db.user.findAll(filter).then(function (found) {
         if (!!found)
             res.json(found);
@@ -177,45 +169,42 @@ app.get('/users', function (req, res) {
         res.status(500).json(e);
     })
 });
-
-app.get('/users/:id', function (req, res) {
-	db.user.findById(req.params.id).then(
-	    function (found) {
-			if (!!found) {
-				res.status(200).json(found);
-			} else {
-				res.status(404).send();
-			}
-		},
-		function (err) {
-			console.log(JSON.stringify(err));
-			res.status(400).json(err);
-		})
+app.get('/users/:id', requireAuthentication, function (req, res) {
+    db.user.findById(req.params.id).then(
+            function (found) {
+                if (!!found) {
+                    res.status(200).json(found);
+                } else {
+                    res.status(404).send();
+                }
+            },
+            function (err) {
+                console.log(JSON.stringify(err));
+                res.status(400).json(err);
+            })
 });
-
 // POST /users
 
-app.post('/users', function(req, res) {
-     var body = req.body;
+app.post('/users', function (req, res) {
+    var body = req.body;
     var values = _.pick(body, "email", "password");
     if (values.hasOwnProperty("email")) {
-		values.email = values.email.toLowerCase();
-	}
+        values.email = values.email.toLowerCase();
+    }
     db.user.create(values).then(
-      function (newObj) {
-        res.status(200).send(newObj.toPublicJSON());
-      },
-      function(err) {
-        res.status(400).json(err);
-      }
+            function (newObj) {
+                res.status(200).send(newObj.toPublicJSON());
+            },
+            function (err) {
+                res.status(400).json(err);
+            }
     );
 });
-
-// TODO: post /users/login
-app.post('/users/login', function(req, res) {
+// POST /users/login
+app.post('/users/login', function (req, res) {
     var body = _.pick(req.body, "email", "password");
     db.user.authenticate(body).then(
-            function(user) {
+            function (user) {
                 console.log("Successful authentiation " + body.email);
                 var token = user.generateToken('authentication');
                 if (token)
@@ -225,16 +214,15 @@ app.post('/users/login', function(req, res) {
                     res.status(401).send();
                 }
             },
-            function(err) {
+            function (err) {
                 console.log("Authentication error:" + (err) ? err.toString() : "not specified");
                 res.status(401).send();
             })
 });
-
 /*
  * set up database
  */
-db.sequelize.sync().then(function () {
+db.sequelize.sync({force: ERASE_DB}).then(function () {
     try {
         console.log("about to listen on port " + PORT);
         app.listen(PORT, function () {

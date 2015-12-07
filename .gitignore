@@ -1,3 +1,7 @@
 node_modules/
+playground/
+.settings
+.project
+.tern-project
 **/.DS_Store
 data/*.sqlite

@@ -20,42 +20,49 @@ var Todo = sequelize.define('todo',
                 defaultValue: false
             }
         });
+var User = sequelize.define("user",
+        {email: Sequelize.STRING}
+);
+
+Todo.belongsTo(User);
+User.hasMany(Todo);
 
 sequelize.sync().then(function () {
     console.log("Everything is synced");
     return Todo.findById(88);
 }).then(function (result) {
-    if (result) 
+    if (result)
         console.log(result.toJSON());
     else
         console.log("not found");
 });
-//}).then(function () {
-//    console.log("1");
-//    return Todo.findOrCreate({where: {description: "Prove the Riemann Hypothesis", completed: false}})
-//}).then(function (todo) {
-//    console.log("Got:" + JSON.stringify(todo));
-//    console.log("2");
-//    return Todo.findOrCreate({where: {description: "Prove the Golbach Conjecture", completed: false}})
-//}).then(function (todo) {
-//    console.log("Got:" + JSON.stringify(todo));
-//    console.log("3");
-//    return Todo.findOrCreate({where: {description: "Prove P <> NP by couterexample", completed: false}})
-//}).then(function (todo) {
-//    console.log("Got:" + JSON.stringify(todo));
-//    console.log("4");
-//    return Todo.findOrCreate({where: {description: "Pick up some milk", completed: true}})
-//}).then(function (todo) {
-//    console.log("Got:" + JSON.stringify(todo));
-//    console.log("5");
-//    return Todo.findOrCreate({where: {description: "", completed: true}})
-//}).then(function (todo) {
-//    console.log("Got:" + JSON.stringify(todo));
-//    console.log("That concludes the inserts/selects");
-//}).catch (function (e) {
-//    console.log("********************************");
-//    console.log("Error occurred:" + e);
-//    console.log("********************************");
-//}).finally(function () {
-//    console.log("finished");
-//});
+User.findById(1).then(
+        function (user) {
+            user.getTodos({where: {completed: false}}).then(function (todos) {
+               console.log("\nTODOS for user 1:\n=================");
+               todos.forEach(function (todo) {
+                   console.log(JSON.stringify(todo));
+               });
+               return new Promise(function (resolve, reject) {resolve("I am happy");});
+            }).then(function () {console.log("DONE\n\n")});
+        }, function (err) {
+          console.log(err);  
+        }).then(function () {console.log("DONEDONE")});
+
+//User.create({
+//    email: "user@example.com"
+//}).then(
+//        function () {
+//            return Todo.create({
+//                description: "Clean Yard"
+//            })
+//        }
+//).then (
+//    function (todo) {
+//        User.findById(1).then(function (user) {
+//          user.addTodo(todo);  
+//        })
+//    }
+//);
+
+
