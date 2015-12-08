@@ -16,7 +16,7 @@ app.get('/', function (req, res) {
 app.get('/todos', requireAuthentication, function (req, res) {
     console.log("GET /todos");
     var query = req.query;
-    var filter = {where: {}};
+    var filter = {where: {userid: req.user.get('id')}};
     if (query.hasOwnProperty('completed')) {
         var completed;
         if (query.completed === "true")
@@ -47,7 +47,7 @@ app.get('/todos', requireAuthentication, function (req, res) {
 app.get('/todos/:id', requireAuthentication, function (req, res) {
     var todoId = parseInt(req.params.id);
     console.log("looking for " + todoId);
-    db.todo.find({where: {id: todoId}}).then(function (found) {
+    db.todo.find({where: {id: todoId, userId:req.user.get('id')}}).then(function (found) {
         console.log(JSON.stringify(found));
         if (!!found)
             res.json(found)
@@ -62,7 +62,7 @@ app.get('/todos/:id', requireAuthentication, function (req, res) {
 
 app.delete('/todos/:id', requireAuthentication, function (req, res) {
     var todoId = parseInt(req.params.id);
-    db.todo.find({where: {id: todoId}}).
+    db.todo.findOne({where: {id: todoId, userId:req.user.get('id')}}).
             then(function (found) {
                 return found.destroy();
             }).
@@ -123,7 +123,7 @@ function patchFunc(req, res) {
         return;
     }
     // OK now try the update
-    db.todo.findById(todoId).
+    db.todo.findOne({where: {id: todoId, userId:req.user.get('id')}}).
             then(function (found) {
                 if (found) {
                     _.extend(found, validAttributes); //could also use update
